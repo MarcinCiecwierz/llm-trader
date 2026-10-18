@@ -1,10 +1,12 @@
 import asyncio
 import time
+
 from dotenv import load_dotenv
-from clients.openrouter import OpenRouterClient
+
 from clients.coinbase_client import CoinbaseClient
-from services.chat_service import ChatService
+from clients.openrouter import OpenRouterClient
 from models.model import Model
+from services.chat_service import ChatService
 
 load_dotenv()
 
@@ -36,16 +38,22 @@ async def ask_model(model: Model, price: float, currency: str):
     chat = ChatService(OpenRouterClient(model=model.name).model)
     start = time.perf_counter()
     try:
-        outcome = await chat.decide(model, price, SYSTEM_PROMPT, user_prompt(model, price, currency))
+        outcome = await chat.decide(
+            model, price, SYSTEM_PROMPT, user_prompt(model, price, currency)
+            )
         elapsed = time.perf_counter() - start
 
         if outcome is None:
             print(f"{model.name} ({elapsed:.1f}s): no tool call -> hold")
         else:
             call, result = outcome
-            print(f"{model.name} ({elapsed:.1f}s): {call['name']} {call['args']}\n  -> {result}")
+            print(
+                f"{model.name} ({elapsed:.1f}s):" +
+                f"{call['name']} {call['args']}\n  -> {result}"
+                )
 
-        print(f"  balance: {model.balance_money:.2f} USD, {model.balance_btc} BTC\n")
+        print(f"  balance: {model.balance_money:.2f} USD" +
+              "{model.balance_btc} BTC\n")
     except Exception as e:
         print(f"{model.name} - {type(e).__name__}: {e}\n")
 
@@ -55,13 +63,16 @@ async def run_round(coinbase_client: CoinbaseClient, models: list[Model]):
     price = float(btc_tick.amount)
     print(f"=== BTC: {price} {btc_tick.currency} ===")
 
-    await asyncio.gather(*(ask_model(m, price, btc_tick.currency) for m in models))
+    await asyncio.gather(
+        *(ask_model(m, price, btc_tick.currency) for m in models)
+        )
 
 
 async def main():
     coinbase_client = CoinbaseClient()
 
-    # portfele tworzone raz, przed pętlą, żeby saldo nie resetowało się co rundę
+    # portfele tworzone raz, przed pętlą,
+    # żeby saldo nie resetowało się co rundę
     models = [
         Model(name="anthropic/claude-haiku-5.5"),
         Model(name="z-ai/glm-5.3-flash"),
@@ -74,7 +85,8 @@ async def main():
         try:
             await run_round(coinbase_client, models)
         except Exception as e:
-            # np. Coinbase nie odpowiada: pomijamy rundę zamiast wywalać całą apkę
+            # np. Coinbase nie odpowiada:
+            # pomijamy rundę zamiast wywalać całą apkę
             print(f"Round failed - {type(e).__name__}: {e}")
 
         elapsed = time.perf_counter() - start

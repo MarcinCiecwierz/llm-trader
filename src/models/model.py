@@ -1,6 +1,5 @@
 class Model:
-
-    def __init__(self, name, balance_money = 1000, balance_btc = 1):
+    def __init__(self, name, balance_money=1000, balance_btc=1):
         self.name = name
         self.balance_money = balance_money
         self.balance_btc = balance_btc

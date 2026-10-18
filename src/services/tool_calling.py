@@ -1,11 +1,13 @@
 from langchain_core.tools import tool
+
 from models.model import Model
+
 
 def make_tools(model: Model, price):
 
     @tool
     def buy(amount_btc, reason: str) -> str:
-        """Buy BTC at the current market price. amount_btc: how much BTC to buy. 
+        """Buy BTC at the current market price. amount_btc: how much BTC to buy.
         reason: short justification."""
 
         cost = amount_btc * price
