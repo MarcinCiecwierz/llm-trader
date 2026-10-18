@@ -1,0 +1,22 @@
+[project]
+name = "jev-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "MarcinCiecwierz", email = "s25116@pjwstk.edu.pl" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "dotenv>=0.9.9",
+    "langchain-openrouter>=0.2.9",
+    "pydantic>=2.12.5",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+jev-test = "jev_test:main"
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
