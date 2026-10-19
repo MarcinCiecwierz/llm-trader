@@ -56,7 +56,7 @@ class CoinbaseClient:
             params={
                 "start": str(start),
                 "end": str(end),
-                granularity: str(granularity),
+                "granularity": str(granularity),
                 "limit": 350
             }
         )

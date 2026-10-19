@@ -1,5 +1,6 @@
 import asyncio
 import time
+import traceback
 
 from dotenv import load_dotenv
 
@@ -26,20 +27,24 @@ You cannot spend more USD or sell more BTC than you have.
 """
 
 
-def user_prompt(model: Model, price: float, currency: str) -> str:
+def user_prompt(model: Model, market_data: dict) -> str:
     return (
-        f"Current BTC price: {price} {currency}\n"
+        f"Current BTC price: {market_data['price']} USD\n"
         f"USD balance: {model.balance_money:.2f}\n"
-        f"BTC balance: {model.balance_btc}"
+        f"BTC balance: {model.balance_btc}\n"
+        f"Market product data: {market_data['product']}\n"
+        f"Recent candles: {market_data['candles'][-10:]}\n"
+        f"Order book: {market_data['order_book']}"
     )
 
 
-async def ask_model(model: Model, price: float, currency: str):
+async def ask_model(model: Model, market_data):
     chat = ChatService(OpenRouterClient(model=model.name).model)
     start = time.perf_counter()
+
     try:
         outcome = await chat.decide(
-            model, price, SYSTEM_PROMPT, user_prompt(model, price, currency)
+            model, market_data['price'], SYSTEM_PROMPT, user_prompt(model, market_data)
             )
         elapsed = time.perf_counter() - start
 
@@ -55,18 +60,36 @@ async def ask_model(model: Model, price: float, currency: str):
         print(
             f"balance: {model.balance_money:.2f} USD\n"
             f"{model.balance_btc} BTC\n"
-            )
+        )
+
     except Exception as e:  # noqa: BLE001
         print(f"{model.name} - {type(e).__name__}: {e}\n")
 
 
+async def get_market_data(
+        client: CoinbaseClient
+):
+    price, product, candles, order_book = await asyncio.gather(
+        asyncio.to_thread(client.get_price),
+        asyncio.to_thread(client.get_product),
+        asyncio.to_thread(client.get_candles),
+        asyncio.to_thread(client.get_order_book)
+    )
+
+    return {
+        "price": price,
+        "product": product,
+        "candles": candles,
+        "order_book": order_book
+    }
+
 async def run_round(coinbase_client: CoinbaseClient, models: list[Model]):
-    price = await asyncio.to_thread(coinbase_client.get_price, "BTC", "USD")
+    market_data = await get_market_data(coinbase_client)
     currency = "USD"
-    print(f"=== BTC: {price} {currency} ===")
+    print(f"=== BTC: {market_data['price']} {currency} ===")
 
     await asyncio.gather(
-        *(ask_model(m, price, currency) for m in models)
+        *(ask_model(m, market_data) for m in models)
         )
 
 
@@ -88,6 +111,7 @@ async def main():
         except Exception as e:  # noqa: BLE001
             # np. Coinbase nie odpowiada:
             # pomijamy rundę zamiast wywalać całą apkę
+            traceback.print_exc()
             print(f"Round failed - {type(e).__name__}: {e}")
 
         elapsed = time.perf_counter() - start
