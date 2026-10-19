@@ -61,12 +61,12 @@ async def ask_model(model: Model, price: float, currency: str):
 
 
 async def run_round(coinbase_client: CoinbaseClient, models: list[Model]):
-    btc_tick = await asyncio.to_thread(coinbase_client.get_price, "BTC", "USD")
-    price = float(btc_tick.amount)
-    print(f"=== BTC: {price} {btc_tick.currency} ===")
+    price = await asyncio.to_thread(coinbase_client.get_price, "BTC", "USD")
+    currency = "USD"
+    print(f"=== BTC: {price} {currency} ===")
 
     await asyncio.gather(
-        *(ask_model(m, price, btc_tick.currency) for m in models)
+        *(ask_model(m, price, currency) for m in models)
         )
 
 
