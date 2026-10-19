@@ -48,13 +48,15 @@ async def ask_model(model: Model, price: float, currency: str):
         else:
             call, result = outcome
             print(
-                f"{model.name} ({elapsed:.1f}s):" +
-                f"{call['name']} {call['args']}\n  -> {result}"
+                f"{model.name} ({elapsed:.1f}s): "
+                f"{call['name']} \n{call['args']} -> {result}"
                 )
 
-        print(f"  balance: {model.balance_money:.2f} USD" +
-              "{model.balance_btc} BTC\n")
-    except Exception as e:
+        print(
+            f"balance: {model.balance_money:.2f} USD\n"
+            f"{model.balance_btc} BTC\n"
+            )
+    except Exception as e:  # noqa: BLE001
         print(f"{model.name} - {type(e).__name__}: {e}\n")
 
 
@@ -71,20 +73,19 @@ async def run_round(coinbase_client: CoinbaseClient, models: list[Model]):
 async def main():
     coinbase_client = CoinbaseClient()
 
-    # portfele tworzone raz, przed pętlą,
-    # żeby saldo nie resetowało się co rundę
-    models = [
-        Model(name="anthropic/claude-haiku-5.5"),
-        Model(name="z-ai/glm-5.3-flash"),
-        Model(name="openai/gpt-6-luna"),
-        Model(name="deepseek/deepseek-v4-flash-0731"),
+    model_names = [
+        "anthropic/claude-haiku-5.5",
+        "z-ai/glm-5.3-flash",
+        "openai/gpt-6-luna",
+        "deepseek/deepseek-v4-flash-0731"
     ]
+    models = [Model.load_state(name) for name in model_names]
 
     while True:
         start = time.perf_counter()
         try:
             await run_round(coinbase_client, models)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # np. Coinbase nie odpowiada:
             # pomijamy rundę zamiast wywalać całą apkę
             print(f"Round failed - {type(e).__name__}: {e}")
